@@ -29,4 +29,28 @@ public:
 	UPROPERTY(EditAnywhere, Category = MySettings)
 	class USpringArmComponent* springArmComp;
 
+	UPROPERTY(EditAnywhere, Category = MySettings)
+	class UInputMappingContext* myIMC_File;
+
+	UPROPERTY(EditAnywhere, Category = MySettings)
+	class UInputAction* ia_jump;
+
+	UPROPERTY(EditAnywhere, Category = MySettings)
+	class UInputAction* ia_move;
+	
+
+private:
+	FVector moveDir;
+
+	void OnMoveInput(const struct FInputActionValue& value);
+
+	// UPROPERTY 메타 지정자 예시
+	/*UPROPERTY(EditAnywhere, BlueprintReadWrite,  Category = TestCategory)
+	int32 testNumber1 = 10;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = TestCategory)
+	int32 testNumber2 = 20;
+
+	UPROPERTY(EditAnywhere, Category = TestCategory)
+	int32 testNumber3 = 30;*/
 };

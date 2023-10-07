@@ -6,6 +6,7 @@
 #include "GameFramework/SpringArmComponent.h"
 #include "EnhancedInputComponent.h"
 #include "EnhancedInputSubsystems.h"
+#include "GameFramework/CharacterMovementComponent.h"
 
 
 AMyCharacter::AMyCharacter()
@@ -31,6 +32,15 @@ AMyCharacter::AMyCharacter()
 		myMesh->SetRelativeLocation(FVector(0, 0, -90.0f));
 		myMesh->SetRelativeRotation(FRotator(0, -90.0f, 0));
 	}
+
+	// 기본 이동 속도를 600cm/s 로 설정한다.
+	GetCharacterMovement()->MaxWalkSpeed = 600;
+	
+	// 최대 점프 횟수를 3회로 설정한다.
+	JumpMaxCount = 3;
+
+	// 웅크리기를 가능하게 설정한다.
+	GetCharacterMovement()->GetNavAgentPropertiesRef().bCanCrouch = true;
 }
 
 void AMyCharacter::BeginPlay()
@@ -38,7 +48,7 @@ void AMyCharacter::BeginPlay()
 	Super::BeginPlay();
 
 	// 현재의 플레이어 컨트롤러를 가져온다.
-	APlayerController* pc = GetController<APlayerController>();
+	pc = GetController<APlayerController>();
 
 	// Enhanced Input Local Player Subsystem 가져오기
 	if (pc != nullptr)
@@ -51,6 +61,12 @@ void AMyCharacter::BeginPlay()
 			enhancedInputSubsys->AddMappingContext(myIMC_File, 0);
 		}
 	}
+
+	// 로그를 출력하기
+	UE_LOG(LogTemp, Log, TEXT("MyLog1"));
+	UE_LOG(LogTemp, Warning, TEXT("MyLog2"));
+	UE_LOG(LogTemp, Error, TEXT("MyLog3"));
+	
 }
 
 void AMyCharacter::Tick(float DeltaTime)
@@ -62,7 +78,27 @@ void AMyCharacter::Tick(float DeltaTime)
 	moveDir.Normalize();
 	//moveDir = moveDir.GetSafeNormal();
 
+	// 플레이어 콘트롤러의 방향을 기준으로 입력 값을 다시 계산한다.
+	//moveDir = pc->GetControlRotation() * moveDir.X + pc->GetControlRotation() * moveDir.Y;
+	FVector forwardVector = FRotationMatrix(pc->GetControlRotation()).GetUnitAxis(EAxis::X);
+	FVector rightVector = FRotationMatrix(pc->GetControlRotation()).GetUnitAxis(EAxis::Y);
+	moveDir = (forwardVector * moveDir.X + rightVector * moveDir.Y).GetSafeNormal();
+
 	AddMovementInput(moveDir);
+
+	//UE_LOG(LogTemp, Warning, TEXT("Walk Speed : %.3f"), GetCharacterMovement()->MaxWalkSpeed);
+
+	// 캐릭터 좌우 회전 - 플레이어 컨트롤러 회전 기반
+	AddControllerYawInput(rotateAxis.Yaw);
+
+	// 카메라 상하 회전 - 스프링 암 회전 기반
+	FRotator currentCamRot = springArmComp->GetComponentRotation();
+	float modifyPitch = currentCamRot.Pitch + rotateAxis.Pitch;
+	
+	// 스프링 암의 회전 범위는 -60도 ~ 60도 사이로 제한한다.
+	modifyPitch = FMath::Clamp(modifyPitch, -60, 60);
+	FRotator modifiedRot = FRotator(modifyPitch, currentCamRot.Yaw, currentCamRot.Roll);
+	springArmComp->SetWorldRotation(modifiedRot);
 }
 
 void AMyCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
@@ -79,6 +115,11 @@ void AMyCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputCompone
 		enhancedInputComponent->BindAction(ia_jump, ETriggerEvent::Completed, this, &ACharacter::StopJumping);
 		enhancedInputComponent->BindAction(ia_move, ETriggerEvent::Triggered, this, &AMyCharacter::OnMoveInput);
 		enhancedInputComponent->BindAction(ia_move, ETriggerEvent::Completed, this, &AMyCharacter::OnMoveInput);
+		enhancedInputComponent->BindAction(ia_rotate, ETriggerEvent::Triggered, this, &AMyCharacter::OnRotateInput);
+		enhancedInputComponent->BindAction(ia_rotate, ETriggerEvent::Completed, this, &AMyCharacter::OnRotateInput);
+		enhancedInputComponent->BindAction(ia_dash, ETriggerEvent::Started, this, &AMyCharacter::OnDashInputStart);
+		enhancedInputComponent->BindAction(ia_dash, ETriggerEvent::Completed, this, &AMyCharacter::OnDashInputEnd);
+		
 	}
 }
 
@@ -90,3 +131,24 @@ void AMyCharacter::OnMoveInput(const FInputActionValue& value)
 	moveDir.X = moveInput.X;
 	moveDir.Y = moveInput.Y;
 }
+
+void AMyCharacter::OnRotateInput(const FInputActionValue& value)
+{
+	// 마우스 입력 값을 RotateAxis 변수의 Yaw축과 Pitch축에 저장한다.
+	FVector2D rotateInput = value.Get<FVector2D>();
+	rotateAxis.Yaw = rotateInput.X;
+	rotateAxis.Pitch = rotateInput.Y;
+}
+
+void AMyCharacter::OnDashInputStart(const FInputActionValue& value)
+{
+	//GetCharacterMovement()->MaxWalkSpeed = 2400.0f;
+	Crouch();
+}
+
+void AMyCharacter::OnDashInputEnd(const FInputActionValue& value)
+{
+	//GetCharacterMovement()->MaxWalkSpeed = 600.0f;
+	UnCrouch();
+}
+

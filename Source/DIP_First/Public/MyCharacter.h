@@ -37,12 +37,23 @@ public:
 
 	UPROPERTY(EditAnywhere, Category = MySettings)
 	class UInputAction* ia_move;
+
+	UPROPERTY(EditAnywhere, Category = MySettings)
+	class UInputAction* ia_rotate;
+
+	UPROPERTY(EditAnywhere, Category = MySettings)
+	class UInputAction* ia_dash;
 	
 
 private:
 	FVector moveDir;
+	FRotator rotateAxis;
+	class APlayerController* pc;
 
 	void OnMoveInput(const struct FInputActionValue& value);
+	void OnRotateInput(const struct FInputActionValue& value);
+	void OnDashInputStart(const struct FInputActionValue& value);
+	void OnDashInputEnd(const struct FInputActionValue& value);
 
 	// UPROPERTY 메타 지정자 예시
 	/*UPROPERTY(EditAnywhere, BlueprintReadWrite,  Category = TestCategory)

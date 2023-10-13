@@ -30,6 +30,11 @@ public:
 	class USpringArmComponent* springArmComp;
 
 	UPROPERTY(EditAnywhere, Category = MySettings)
+	class USkeletalMeshComponent* gunMeshComp;
+	
+	
+	
+	UPROPERTY(EditAnywhere, Category = MySettings)
 	class UInputMappingContext* myIMC_File;
 
 	UPROPERTY(EditAnywhere, Category = MySettings)
@@ -44,6 +49,12 @@ public:
 	UPROPERTY(EditAnywhere, Category = MySettings)
 	class UInputAction* ia_dash;
 	
+	UPROPERTY(EditAnywhere, Category = MySettings)
+	class UInputAction* ia_fire;
+
+	UPROPERTY(EditAnywhere, Category = MySettings)
+	TSubclassOf<class ABulletActor> bullet_bp;
+
 
 private:
 	FVector moveDir;
@@ -54,6 +65,7 @@ private:
 	void OnRotateInput(const struct FInputActionValue& value);
 	void OnDashInputStart(const struct FInputActionValue& value);
 	void OnDashInputEnd(const struct FInputActionValue& value);
+	void OnFireInput(const struct FInputActionValue& value);
 
 	// UPROPERTY 메타 지정자 예시
 	/*UPROPERTY(EditAnywhere, BlueprintReadWrite,  Category = TestCategory)

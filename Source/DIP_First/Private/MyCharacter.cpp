@@ -7,6 +7,8 @@
 #include "EnhancedInputComponent.h"
 #include "EnhancedInputSubsystems.h"
 #include "GameFramework/CharacterMovementComponent.h"
+#include "BulletActor.h"
+
 
 
 AMyCharacter::AMyCharacter()
@@ -21,6 +23,11 @@ AMyCharacter::AMyCharacter()
 	// 카메라 컴포넌트를 스프링 암 컴포넌트의 자식 컴포넌트로 생성 및 부착한다.
 	cameraComp = CreateDefaultSubobject<UCameraComponent>(TEXT("Camera Comp"));
 	cameraComp->SetupAttachment(springArmComp);
+
+	// 총 외형을 보여주기 위한 스켈레탈 메시 컴포넌트를 바디 메시의 자식 컴포넌트로 생성 및 부착한다.
+	gunMeshComp = CreateDefaultSubobject<USkeletalMeshComponent>(TEXT("Gun Mesh Comp"));
+	gunMeshComp->SetupAttachment(GetMesh(), FName("WeaponSocket"));
+
 
 	// 스켈레탈 메시 파일을 생성해서 SkeletalMesh Component에 넣기
 	static ConstructorHelpers::FObjectFinder<USkeletalMesh> playerMesh(TEXT("/Game/Characters/Mannequins/Meshes/SKM_Manny"));
@@ -119,7 +126,7 @@ void AMyCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputCompone
 		enhancedInputComponent->BindAction(ia_rotate, ETriggerEvent::Completed, this, &AMyCharacter::OnRotateInput);
 		enhancedInputComponent->BindAction(ia_dash, ETriggerEvent::Started, this, &AMyCharacter::OnDashInputStart);
 		enhancedInputComponent->BindAction(ia_dash, ETriggerEvent::Completed, this, &AMyCharacter::OnDashInputEnd);
-		
+		enhancedInputComponent->BindAction(ia_fire, ETriggerEvent::Started, this, &AMyCharacter::OnFireInput);
 	}
 }
 
@@ -150,5 +157,23 @@ void AMyCharacter::OnDashInputEnd(const FInputActionValue& value)
 {
 	//GetCharacterMovement()->MaxWalkSpeed = 600.0f;
 	UnCrouch();
+}
+
+void AMyCharacter::OnFireInput(const struct FInputActionValue& value)
+{
+	// 1. 순수한 블루프린트 파일을 월드에 생성하는 방법
+	/*FActorSpawnParameters params;
+	params.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
+
+	GetWorld()->SpawnActor<AActor>(bullet_bp, gunMeshComp->GetSocketLocation(FName("Muzzle")), gunMeshComp->GetSocketRotation(FName("Muzzle")), params);*/
+
+	// 2. CPP 파일 기반 블루프린트 파일을 월드에 생성하는 방법
+	FActorSpawnParameters params;
+	params.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
+
+	ABulletActor* spawnedBullet = GetWorld()->SpawnActor<ABulletActor>(bullet_bp, gunMeshComp->GetSocketLocation(FName("Muzzle")), gunMeshComp->GetSocketRotation(FName("Muzzle")), params);
+	
+
+
 }
 

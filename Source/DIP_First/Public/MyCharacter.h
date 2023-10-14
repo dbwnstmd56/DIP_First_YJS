@@ -18,7 +18,7 @@ public:
 protected:
 	virtual void BeginPlay() override;
 
-public:	
+public:
 	virtual void Tick(float DeltaTime) override;
 
 	virtual void SetupPlayerInputComponent(class UInputComponent* PlayerInputComponent) override;
@@ -31,9 +31,9 @@ public:
 
 	UPROPERTY(EditAnywhere, Category = MySettings)
 	class USkeletalMeshComponent* gunMeshComp;
-	
-	
-	
+
+
+
 	UPROPERTY(EditAnywhere, Category = MySettings)
 	class UInputMappingContext* myIMC_File;
 
@@ -48,12 +48,34 @@ public:
 
 	UPROPERTY(EditAnywhere, Category = MySettings)
 	class UInputAction* ia_dash;
-	
+
 	UPROPERTY(EditAnywhere, Category = MySettings)
 	class UInputAction* ia_fire;
 
 	UPROPERTY(EditAnywhere, Category = MySettings)
+	class UInputAction* ia_throw;
+
+	UPROPERTY(EditAnywhere, Category = MySettings)
 	TSubclassOf<class ABulletActor> bullet_bp;
+
+	UPROPERTY(EditAnywhere, Category = MySettings)
+	TSubclassOf<class AGrenadeActor> grenade_bp;
+
+	UPROPERTY(EditAnywhere, Category = MySettings)
+	class UParticleSystem* hit_fx;
+
+	UPROPERTY(EditAnywhere, Category = MySettings)
+	class USoundBase* fire_sound;
+
+	UPROPERTY(EditAnywhere, Category = MySettings)
+	float throwPower = 1000;
+
+	UFUNCTION(BlueprintCallable, DisplayName = "MyLT")
+	//UFUNCTION(BlueprintPure, DisplayName = "MyLT")
+	bool MyLineTraceMultiByChannel(TArray<struct FHitResult>& hitInfos, const FVector startLoc, const FVector endLoc, enum ECollisionChannel ecc);
+
+	UFUNCTION(BlueprintCallable)
+	int32 Add(int32 num1, int32 num2);
 
 
 private:
@@ -66,6 +88,9 @@ private:
 	void OnDashInputStart(const struct FInputActionValue& value);
 	void OnDashInputEnd(const struct FInputActionValue& value);
 	void OnFireInput(const struct FInputActionValue& value);
+	void OnThrowInput();
+
+
 
 	// UPROPERTY 메타 지정자 예시
 	/*UPROPERTY(EditAnywhere, BlueprintReadWrite,  Category = TestCategory)

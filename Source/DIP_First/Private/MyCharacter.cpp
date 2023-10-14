@@ -1,4 +1,4 @@
-// Fill out your copyright notice in the Description page of Project Settings.
+ï»¿// Fill out your copyright notice in the Description page of Project Settings.
 
 
 #include "MyCharacter.h"
@@ -8,28 +8,38 @@
 #include "EnhancedInputSubsystems.h"
 #include "GameFramework/CharacterMovementComponent.h"
 #include "BulletActor.h"
+#include "DrawDebugHelpers.h"
+#include "Components/CapsuleComponent.h"
+#include "Kismet/GameplayStatics.h"
+#include "GrenadeActor.h"
+#include "Components/SphereComponent.h"
 
+
+#define PrintMsg(msg) UE_LOG(LogTemp, Warning, TEXT("%s(%d): %s"), *FString(__FUNCTION__), __LINE__, msg)
 
 
 AMyCharacter::AMyCharacter()
 {
 	PrimaryActorTick.bCanEverTick = true;
 
-	// ½ºÇÁ¸µ ¾Ï ÄÄÆ÷³ÍÆ®¸¦ Ä¸½¶ ÄÄÆ÷³ÍÆ®¿¡ ÀÚ½Ä ÄÄÆ÷³ÍÆ®·Î ºÎÂøÇÑ´Ù.
+	// ìŠ¤í”„ë§ ì•” ì»´í¬ë„ŒíŠ¸ë¥¼ ìº¡ìŠ ì»´í¬ë„ŒíŠ¸ì— ìì‹ ì»´í¬ë„ŒíŠ¸ë¡œ ë¶€ì°©í•œë‹¤.
 	springArmComp = CreateDefaultSubobject<USpringArmComponent>(TEXT("Spring Arm"));
 	springArmComp->SetupAttachment(RootComponent);
 	springArmComp->TargetArmLength = 500.0f;
 
-	// Ä«¸Ş¶ó ÄÄÆ÷³ÍÆ®¸¦ ½ºÇÁ¸µ ¾Ï ÄÄÆ÷³ÍÆ®ÀÇ ÀÚ½Ä ÄÄÆ÷³ÍÆ®·Î »ı¼º ¹× ºÎÂøÇÑ´Ù.
+	// ì¹´ë©”ë¼ ì»´í¬ë„ŒíŠ¸ë¥¼ ìŠ¤í”„ë§ ì•” ì»´í¬ë„ŒíŠ¸ì˜ ìì‹ ì»´í¬ë„ŒíŠ¸ë¡œ ìƒì„± ë° ë¶€ì°©í•œë‹¤.
 	cameraComp = CreateDefaultSubobject<UCameraComponent>(TEXT("Camera Comp"));
 	cameraComp->SetupAttachment(springArmComp);
 
-	// ÃÑ ¿ÜÇüÀ» º¸¿©ÁÖ±â À§ÇÑ ½ºÄÌ·¹Å» ¸Ş½Ã ÄÄÆ÷³ÍÆ®¸¦ ¹Ùµğ ¸Ş½ÃÀÇ ÀÚ½Ä ÄÄÆ÷³ÍÆ®·Î »ı¼º ¹× ºÎÂøÇÑ´Ù.
+	// ì´ ì™¸í˜•ì„ ë³´ì—¬ì£¼ê¸° ìœ„í•œ ìŠ¤ì¼ˆë ˆíƒˆ ë©”ì‹œ ì»´í¬ë„ŒíŠ¸ë¥¼ ë°”ë”” ë©”ì‹œì˜ ìì‹ ì»´í¬ë„ŒíŠ¸ë¡œ ìƒì„± ë° ë¶€ì°©í•œë‹¤.
 	gunMeshComp = CreateDefaultSubobject<USkeletalMeshComponent>(TEXT("Gun Mesh Comp"));
 	gunMeshComp->SetupAttachment(GetMesh(), FName("WeaponSocket"));
 
+	// ìº¡ìŠ ì½œë¦¬ì „ì˜ í”„ë¦¬ì…‹ì„ ì ìš©í•˜ê¸°
+	GetCapsuleComponent()->SetCollisionProfileName(FName("PlayerPreset"));
+	
 
-	// ½ºÄÌ·¹Å» ¸Ş½Ã ÆÄÀÏÀ» »ı¼ºÇØ¼­ SkeletalMesh Component¿¡ ³Ö±â
+	// ìŠ¤ì¼ˆë ˆíƒˆ ë©”ì‹œ íŒŒì¼ì„ ìƒì„±í•´ì„œ SkeletalMesh Componentì— ë„£ê¸°
 	static ConstructorHelpers::FObjectFinder<USkeletalMesh> playerMesh(TEXT("/Game/Characters/Mannequins/Meshes/SKM_Manny"));
 
 	if (playerMesh.Succeeded())
@@ -40,13 +50,13 @@ AMyCharacter::AMyCharacter()
 		myMesh->SetRelativeRotation(FRotator(0, -90.0f, 0));
 	}
 
-	// ±âº» ÀÌµ¿ ¼Óµµ¸¦ 600cm/s ·Î ¼³Á¤ÇÑ´Ù.
+	// ê¸°ë³¸ ì´ë™ ì†ë„ë¥¼ 600cm/s ë¡œ ì„¤ì •í•œë‹¤.
 	GetCharacterMovement()->MaxWalkSpeed = 600;
 	
-	// ÃÖ´ë Á¡ÇÁ È½¼ö¸¦ 3È¸·Î ¼³Á¤ÇÑ´Ù.
+	// ìµœëŒ€ ì í”„ íšŸìˆ˜ë¥¼ 3íšŒë¡œ ì„¤ì •í•œë‹¤.
 	JumpMaxCount = 3;
 
-	// ¿õÅ©¸®±â¸¦ °¡´ÉÇÏ°Ô ¼³Á¤ÇÑ´Ù.
+	// ì›…í¬ë¦¬ê¸°ë¥¼ ê°€ëŠ¥í•˜ê²Œ ì„¤ì •í•œë‹¤.
 	GetCharacterMovement()->GetNavAgentPropertiesRef().bCanCrouch = true;
 }
 
@@ -54,38 +64,44 @@ void AMyCharacter::BeginPlay()
 {
 	Super::BeginPlay();
 
-	// ÇöÀçÀÇ ÇÃ·¹ÀÌ¾î ÄÁÆ®·Ñ·¯¸¦ °¡Á®¿Â´Ù.
+	// í˜„ì¬ì˜ í”Œë ˆì´ì–´ ì»¨íŠ¸ë¡¤ëŸ¬ë¥¼ ê°€ì ¸ì˜¨ë‹¤.
 	pc = GetController<APlayerController>();
 
-	// Enhanced Input Local Player Subsystem °¡Á®¿À±â
+	// Enhanced Input Local Player Subsystem ê°€ì ¸ì˜¤ê¸°
 	if (pc != nullptr)
 	{
 		UEnhancedInputLocalPlayerSubsystem* enhancedInputSubsys = ULocalPlayer::GetSubsystem<UEnhancedInputLocalPlayerSubsystem>(pc->GetLocalPlayer());
 
-		// Input Mapping Context ÆÄÀÏÀ» ¸ÊÇÎÇÏ±â
+		// Input Mapping Context íŒŒì¼ì„ ë§µí•‘í•˜ê¸°
 		if (enhancedInputSubsys != nullptr)
 		{
 			enhancedInputSubsys->AddMappingContext(myIMC_File, 0);
 		}
 	}
 
-	// ·Î±×¸¦ Ãâ·ÂÇÏ±â
-	UE_LOG(LogTemp, Log, TEXT("MyLog1"));
+	// ë¡œê·¸ë¥¼ ì¶œë ¥í•˜ê¸°
+	//UE_LOG(LogTemp, Log, TEXT("%s(%d): MyLog1"), *FString(__FUNCTION__), __LINE__);
+	/*PrintMsg(*FString("My Log !"));
 	UE_LOG(LogTemp, Warning, TEXT("MyLog2"));
-	UE_LOG(LogTemp, Error, TEXT("MyLog3"));
+	UE_LOG(LogTemp, Error, TEXT("MyLog3"));*/
 	
+	// Pawnì— ëŒ€í•œ Collision Responseë¥¼ Block -> Ignoreë¡œ ë³€ê²½
+	/*GetCapsuleComponent()->SetCollisionResponseToChannel(ECC_Pawn, ECR_Ignore);
+	GetCapsuleComponent()->SetCollisionResponseToChannel(ECC_GameTraceChannel1, ECR_Overlap);
+	GetCapsuleComponent()->SetCollisionObjectType(ECC_Pawn);
+	GetCapsuleComponent()->SetCollisionEnabled(ECollisionEnabled::NoCollision);*/
 }
 
 void AMyCharacter::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
 
-	// moveDir º¯¼öÀÇ °ª¿¡ ÀÖ´Âµ¥·Î Ä³¸¯ÅÍ¸¦ ÀÌµ¿ÇÑ´Ù.
+	// moveDir ë³€ìˆ˜ì˜ ê°’ì— ìˆëŠ”ë°ë¡œ ìºë¦­í„°ë¥¼ ì´ë™í•œë‹¤.
 	// p = p0+vt or AddMovementInput()
 	moveDir.Normalize();
 	//moveDir = moveDir.GetSafeNormal();
 
-	// ÇÃ·¹ÀÌ¾î ÄÜÆ®·Ñ·¯ÀÇ ¹æÇâÀ» ±âÁØÀ¸·Î ÀÔ·Â °ªÀ» ´Ù½Ã °è»êÇÑ´Ù.
+	// í”Œë ˆì´ì–´ ì½˜íŠ¸ë¡¤ëŸ¬ì˜ ë°©í–¥ì„ ê¸°ì¤€ìœ¼ë¡œ ì…ë ¥ ê°’ì„ ë‹¤ì‹œ ê³„ì‚°í•œë‹¤.
 	//moveDir = pc->GetControlRotation() * moveDir.X + pc->GetControlRotation() * moveDir.Y;
 	FVector forwardVector = FRotationMatrix(pc->GetControlRotation()).GetUnitAxis(EAxis::X);
 	FVector rightVector = FRotationMatrix(pc->GetControlRotation()).GetUnitAxis(EAxis::Y);
@@ -95,14 +111,14 @@ void AMyCharacter::Tick(float DeltaTime)
 
 	//UE_LOG(LogTemp, Warning, TEXT("Walk Speed : %.3f"), GetCharacterMovement()->MaxWalkSpeed);
 
-	// Ä³¸¯ÅÍ ÁÂ¿ì È¸Àü - ÇÃ·¹ÀÌ¾î ÄÁÆ®·Ñ·¯ È¸Àü ±â¹İ
+	// ìºë¦­í„° ì¢Œìš° íšŒì „ - í”Œë ˆì´ì–´ ì»¨íŠ¸ë¡¤ëŸ¬ íšŒì „ ê¸°ë°˜
 	AddControllerYawInput(rotateAxis.Yaw);
 
-	// Ä«¸Ş¶ó »óÇÏ È¸Àü - ½ºÇÁ¸µ ¾Ï È¸Àü ±â¹İ
+	// ì¹´ë©”ë¼ ìƒí•˜ íšŒì „ - ìŠ¤í”„ë§ ì•” íšŒì „ ê¸°ë°˜
 	FRotator currentCamRot = springArmComp->GetComponentRotation();
 	float modifyPitch = currentCamRot.Pitch + rotateAxis.Pitch;
 	
-	// ½ºÇÁ¸µ ¾ÏÀÇ È¸Àü ¹üÀ§´Â -60µµ ~ 60µµ »çÀÌ·Î Á¦ÇÑÇÑ´Ù.
+	// ìŠ¤í”„ë§ ì•”ì˜ íšŒì „ ë²”ìœ„ëŠ” -60ë„ ~ 60ë„ ì‚¬ì´ë¡œ ì œí•œí•œë‹¤.
 	modifyPitch = FMath::Clamp(modifyPitch, -60, 60);
 	FRotator modifiedRot = FRotator(modifyPitch, currentCamRot.Yaw, currentCamRot.Roll);
 	springArmComp->SetWorldRotation(modifiedRot);
@@ -112,10 +128,10 @@ void AMyCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputCompone
 {
 	Super::SetupPlayerInputComponent(PlayerInputComponent);
 
-	// ±âÁ¸ ÀÔ·Â ÀÌº¥Æ® º¯¼ö¸¦ EnhancedInput ÇüÅÂ·Î Ä³½ºÆÃ(º¯È¯)ÇÑ´Ù.
+	// ê¸°ì¡´ ì…ë ¥ ì´ë²¤íŠ¸ ë³€ìˆ˜ë¥¼ EnhancedInput í˜•íƒœë¡œ ìºìŠ¤íŒ…(ë³€í™˜)í•œë‹¤.
 	UEnhancedInputComponent* enhancedInputComponent = Cast<UEnhancedInputComponent>(PlayerInputComponent);
 
-	// ÀÔ·Â Å°¿Í ½ÇÇàÇÒ ÇÔ¼ö¸¦ ¿¬°á(Bind)ÇÏ±â
+	// ì…ë ¥ í‚¤ì™€ ì‹¤í–‰í•  í•¨ìˆ˜ë¥¼ ì—°ê²°(Bind)í•˜ê¸°
 	if (enhancedInputComponent != nullptr)
 	{
 		enhancedInputComponent->BindAction(ia_jump, ETriggerEvent::Started, this, &ACharacter::Jump);
@@ -127,13 +143,14 @@ void AMyCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputCompone
 		enhancedInputComponent->BindAction(ia_dash, ETriggerEvent::Started, this, &AMyCharacter::OnDashInputStart);
 		enhancedInputComponent->BindAction(ia_dash, ETriggerEvent::Completed, this, &AMyCharacter::OnDashInputEnd);
 		enhancedInputComponent->BindAction(ia_fire, ETriggerEvent::Started, this, &AMyCharacter::OnFireInput);
+		enhancedInputComponent->BindAction(ia_throw, ETriggerEvent::Completed, this, &AMyCharacter::OnThrowInput);
 	}
 }
 
 
 void AMyCharacter::OnMoveInput(const FInputActionValue& value)
 {
-	// Å° ÀÔ·Â ÀÌº¥Æ® ¹ß»ı ½Ã¿¡ ¹ŞÀº value °ªÀ» FVector2D ÇüÅÂ·Î º¯È¯ÇÑ´Ù.
+	// í‚¤ ì…ë ¥ ì´ë²¤íŠ¸ ë°œìƒ ì‹œì— ë°›ì€ value ê°’ì„ FVector2D í˜•íƒœë¡œ ë³€í™˜í•œë‹¤.
 	FVector2D moveInput = value.Get<FVector2D>();
 	moveDir.X = moveInput.X;
 	moveDir.Y = moveInput.Y;
@@ -141,7 +158,7 @@ void AMyCharacter::OnMoveInput(const FInputActionValue& value)
 
 void AMyCharacter::OnRotateInput(const FInputActionValue& value)
 {
-	// ¸¶¿ì½º ÀÔ·Â °ªÀ» RotateAxis º¯¼öÀÇ YawÃà°ú PitchÃà¿¡ ÀúÀåÇÑ´Ù.
+	// ë§ˆìš°ìŠ¤ ì…ë ¥ ê°’ì„ RotateAxis ë³€ìˆ˜ì˜ Yawì¶•ê³¼ Pitchì¶•ì— ì €ì¥í•œë‹¤.
 	FVector2D rotateInput = value.Get<FVector2D>();
 	rotateAxis.Yaw = rotateInput.X;
 	rotateAxis.Pitch = rotateInput.Y;
@@ -161,19 +178,138 @@ void AMyCharacter::OnDashInputEnd(const FInputActionValue& value)
 
 void AMyCharacter::OnFireInput(const struct FInputActionValue& value)
 {
-	// 1. ¼ø¼öÇÑ ºí·çÇÁ¸°Æ® ÆÄÀÏÀ» ¿ùµå¿¡ »ı¼ºÇÏ´Â ¹æ¹ı
+#pragma region 1. ìˆœìˆ˜í•œ ë¸”ë£¨í”„ë¦°íŠ¸ íŒŒì¼ì„ ì›”ë“œì— ìƒì„±í•˜ëŠ” ë°©ë²•
+	//
 	/*FActorSpawnParameters params;
 	params.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
 
 	GetWorld()->SpawnActor<AActor>(bullet_bp, gunMeshComp->GetSocketLocation(FName("Muzzle")), gunMeshComp->GetSocketRotation(FName("Muzzle")), params);*/
+#pragma endregion
 
-	// 2. CPP ÆÄÀÏ ±â¹İ ºí·çÇÁ¸°Æ® ÆÄÀÏÀ» ¿ùµå¿¡ »ı¼ºÇÏ´Â ¹æ¹ı
-	FActorSpawnParameters params;
+#pragma region 2. CPP íŒŒì¼ ê¸°ë°˜ ë¸”ë£¨í”„ë¦°íŠ¸ íŒŒì¼ì„ ì›”ë“œì— ìƒì„±í•˜ëŠ” ë°©ë²•
+	/*FActorSpawnParameters params;
 	params.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
 
-	ABulletActor* spawnedBullet = GetWorld()->SpawnActor<ABulletActor>(bullet_bp, gunMeshComp->GetSocketLocation(FName("Muzzle")), gunMeshComp->GetSocketRotation(FName("Muzzle")), params);
+	ABulletActor* spawnedBullet = GetWorld()->SpawnActor<ABulletActor>(bullet_bp, gunMeshComp->GetSocketLocation(FName("Muzzle")), gunMeshComp->GetSocketRotation(FName("Muzzle")), params);*/
+#pragma endregion	
+
+	FVector startLoc = gunMeshComp->GetSocketLocation(FName("Muzzle"));
+	FVector endLoc = startLoc + gunMeshComp->GetRightVector() * 1000.0f;
+	FCollisionQueryParams params;
+	params.AddIgnoredActor(this);
+
+#pragma region 3. ë¼ì¸ íŠ¸ë ˆì´ìŠ¤ë¡œ ë°œì‚¬í•˜ê¸° - ì‹±ê¸€
+	/*FHitResult hitInfo;
+	bool bHit = GetWorld()->LineTraceSingleByChannel(hitInfo, startLoc, endLoc, ECC_Visibility, params);
+
+	if (bHit)
+	{
+		UE_LOG(LogTemp, Warning, TEXT("%s"), *hitInfo.GetActor()->GetActorNameOrLabel());
+	}
+	else
+	{
+		UE_LOG(LogTemp, Warning, TEXT("No Hit!!"));
+	}*/
+#pragma endregion	
+
+#pragma region 4. ë¼ì¸ íŠ¸ë ˆì´ìŠ¤ ë°œì‚¬í•˜ê¸° - ë©€í‹°
+	//TArray<FHitResult> hitInfos;
+	//bool bHit = GetWorld()->LineTraceMultiByChannel(hitInfos, startLoc, endLoc, ECC_Visibility, params);
+	//if (bHit)
+	//{
+	//	for (FHitResult hitInfo : hitInfos)
+	//	{
+	//		UE_LOG(LogTemp, Warning, TEXT("%s"), *hitInfo.GetActor()->GetActorNameOrLabel());
+	//	}
+
+	//	FVector hitLoc = hitInfos[0].ImpactPoint;
+
+	//	DrawDebugLine(GetWorld(), startLoc, hitLoc, FColor::Red, false, 2.0f, 0, 1.0f);
+	//	DrawDebugLine(GetWorld(), hitLoc, endLoc, FColor(0, 255, 0), false, 2.0f, 0, 1.0f);
+	//	DrawDebugBox(GetWorld(), hitLoc, FVector(5), FQuat::Identity, FColor(255, 0, 0), false, 2.0f, 0, 2.0f);
+	//}
+	//else
+	//{
+	//	//UE_LOG(LogTemp, Warning, TEXT("No Hit!!"));
+	//	DrawDebugLine(GetWorld(), startLoc, endLoc, FColor::Red, false, 2.0f, 0, 1.0f);
+	//}
+#pragma endregion	
 	
+#pragma region 5. ë¼ì¸ íŠ¸ë ˆì´ìŠ¤ ì˜¤ë¸Œì íŠ¸ íƒ€ì…ìœ¼ë¡œ ì²´í¬í•˜ê¸°
+	/*FHitResult hitInfo;
+	FCollisionObjectQueryParams objectQueryParams;
+	objectQueryParams.AddObjectTypesToQuery(ECC_WorldStatic);
+
+	if (GetWorld()->LineTraceSingleByObjectType(hitInfo, startLoc, endLoc, objectQueryParams, params))
+	{
+		UE_LOG(LogTemp, Warning, TEXT("Hit Object Name: %s"), *hitInfo.GetActor()->GetActorNameOrLabel());
+	}*/
+#pragma endregion
+
+#pragma region 6. ì½œë¦¬ì „ í”„ë¡œí•„ì„ ì´ìš©í•œ ë¼ì¸ íŠ¸ë ˆì´ìŠ¤
+	FHitResult hitInfo;
+	if (GetWorld()->LineTraceSingleByProfile(hitInfo, startLoc, endLoc, FName("TestActor"), params))
+	{
+		UE_LOG(LogTemp, Warning, TEXT("Hit Object Name: %s"), *hitInfo.GetActor()->GetActorNameOrLabel());
+
+		// ì¶©ëŒ ì§€ì ì— íŠ¹ì •í•œ ì´í™íŠ¸ë¥¼ ìƒì„±í•œë‹¤.
+		UGameplayStatics::SpawnEmitterAtLocation(GetWorld(), hit_fx, hitInfo.ImpactPoint, FRotator::ZeroRotator, true);
+	}
+
+#pragma endregion
+	
+	// ì´ ë°œì‚¬ìŒì„ í”Œë ˆì´í•œë‹¤.
+	UGameplayStatics::PlaySound2D(GetWorld(), fire_sound, 0.3f);
 
 
+}
+
+// ìˆ˜ë¥˜íƒ„ íˆ¬ì²™ í•¨ìˆ˜
+void AMyCharacter::OnThrowInput()
+{
+	// 1. ìˆ˜ë¥˜íƒ„ì„ ìƒì„±í•œë‹¤.
+	FActorSpawnParameters params;
+	params.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
+	AGrenadeActor* grenade_inst = GetWorld()->SpawnActor<AGrenadeActor>(grenade_bp, GetActorLocation() + GetActorForwardVector() * 100, FRotator::ZeroRotator, params);
+	
+	if (grenade_inst != nullptr)
+	{
+		// 2. ìˆ˜ë¥˜íƒ„ ì•¡í„°ì˜ ë¬¼ë¦¬ ìƒíƒœë¥¼ ë˜ì§ˆ ìˆ˜ ìˆëŠ” ìƒíƒœë¡œ ë³€ê²½í•œë‹¤.
+		grenade_inst->sphereCollision->SetCollisionEnabled(ECollisionEnabled::QueryAndPhysics);
+		grenade_inst->sphereCollision->SetSimulatePhysics(true);
+		grenade_inst->sphereCollision->SetEnableGravity(true);
+
+		// 3. ìˆ˜ë¥˜íƒ„ì„ ëŒ€ê°ì„  45ë„ë¡œ ë¬¼ë¦¬ì ìœ¼ë¡œ ë°œì‚¬í•œë‹¤.
+		FVector throwDir = (GetActorForwardVector() + GetActorUpVector()).GetSafeNormal();
+		grenade_inst->sphereCollision->AddImpulse(throwDir * throwPower);
+	}
+}
+
+// ë¸”ë£¨í”„ë¦°íŠ¸ ë…¸ë“œë¡œ ì‚¬ìš©í•  í•¨ìˆ˜
+bool AMyCharacter::MyLineTraceMultiByChannel(TArray<FHitResult>& hitInfos, const FVector startLoc, const FVector endLoc, ECollisionChannel ecc)
+{
+	FCollisionQueryParams params;
+	params.AddIgnoredActor(this);
+	bool bHit = GetWorld()->LineTraceMultiByChannel(hitInfos, startLoc, endLoc, ecc, params);
+
+	if (bHit)
+	{
+		FVector hitLoc = hitInfos[0].ImpactPoint;
+
+		DrawDebugLine(GetWorld(), startLoc, hitLoc, FColor::Red, false, 2.0f, 0, 1.0f);
+		DrawDebugLine(GetWorld(), hitLoc, endLoc, FColor(0, 255, 0), false, 2.0f, 0, 1.0f);
+		DrawDebugBox(GetWorld(), hitLoc, FVector(5), FQuat::Identity, FColor(255, 0, 0), false, 2.0f, 0, 2.0f);
+	}
+	else
+	{
+		DrawDebugLine(GetWorld(), startLoc, endLoc, FColor::Red, false, 2.0f, 0, 1.0f);
+	}
+
+	return bHit;
+}
+
+int32 AMyCharacter::Add(int32 num1, int32 num2)
+{
+	return num1 + num2;
 }
 

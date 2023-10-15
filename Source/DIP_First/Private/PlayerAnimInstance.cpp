@@ -17,7 +17,7 @@ void UPlayerAnimInstance::NativeBeginPlay()
 		movementComp = player->GetCharacterMovement();
 	}
 
-	UE_LOG(LogTemp, Warning, TEXT("%s"), player == nullptr ? *FString("Player is Null!") : *FString("Player Set!"));
+	//UE_LOG(LogTemp, Warning, TEXT("%s"), player == nullptr ? *FString("Player is Null!") : *FString("Player Set!"));
 }
 
 void UPlayerAnimInstance::NativeUpdateAnimation(float DeltaTimeX)
@@ -26,8 +26,10 @@ void UPlayerAnimInstance::NativeUpdateAnimation(float DeltaTimeX)
 
 	if (player != nullptr)
 	{
-		vertical = player->moveDir.X;
-		horizontal = player->moveDir.Y;
+		vertical = player->moveDir.X * movementComp->MaxWalkSpeed;
+		horizontal = player->moveDir.Y * movementComp->MaxWalkSpeed;
 		bIsJump = movementComp->IsFalling();
+
+		//UE_LOG(LogTemp, Warning, TEXT("V: %f, H: %f"), vertical, horizontal);
 	}
 }

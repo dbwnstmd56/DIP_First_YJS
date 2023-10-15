@@ -77,6 +77,12 @@ public:
 	UPROPERTY(EditAnywhere, Category = MySettings)
 	TSubclassOf<class UCameraShakeBase> shake_bp;
 
+	UPROPERTY(EditAnywhere, Category = MySettings)
+	class UAnimMontage* fireAnim;
+
+	UPROPERTY(EditAnywhere, Category = MySettings)
+	class UAnimMontage* fireAnim2;
+
 	UFUNCTION(BlueprintCallable, DisplayName = "MyLT")
 	//UFUNCTION(BlueprintPure, DisplayName = "MyLT")
 	bool MyLineTraceMultiByChannel(TArray<struct FHitResult>& hitInfos, const FVector startLoc, const FVector endLoc, enum ECollisionChannel ecc);

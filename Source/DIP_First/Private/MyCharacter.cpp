@@ -267,14 +267,17 @@ void AMyCharacter::OnFireInput(const struct FInputActionValue& value)
 	// 총 발사음을 플레이한다.
 	UGameplayStatics::PlaySound2D(GetWorld(), fire_sound, 0.3f);
 
-	// 카메라 셰이킹을 한다.
-	if (pc != nullptr && shake_bp != nullptr)
-	{
-		pc->ClientStartCameraShake(shake_bp);
-	}
+	//// 카메라 셰이킹을 한다.
+	//if (pc != nullptr && shake_bp != nullptr)
+	//{
+	//	pc->ClientStartCameraShake(shake_bp);
+	//}
 
-	// 카메라 페이드 인을 한다.
-	pc->PlayerCameraManager->StartCameraFade(1.0f, 0.0f, 1.0f, FLinearColor(1, 1, 1), true);
+	//// 카메라 페이드 인을 한다.
+	//pc->PlayerCameraManager->StartCameraFade(1.0f, 0.0f, 1.0f, FLinearColor(1, 1, 1), true);
+
+	// 총 발사 애니메이션을 플레이한다.
+	PlayAnimMontage(fireAnim);
 }
 
 // 수류탄 투척 함수
@@ -296,6 +299,8 @@ void AMyCharacter::OnThrowInput()
 		FVector throwDir = (GetActorForwardVector() + GetActorUpVector()).GetSafeNormal();
 		grenade_inst->sphereCollision->AddImpulse(throwDir * throwPower);
 	}
+
+	PlayAnimMontage(fireAnim2);
 }
 
 void AMyCharacter::OnZoomInCamera()
@@ -316,7 +321,7 @@ bool AMyCharacter::MyLineTraceMultiByChannel(TArray<FHitResult>& hitInfos, const
 	FCollisionQueryParams params;
 	params.AddIgnoredActor(this);
 	bool bHit = GetWorld()->LineTraceMultiByChannel(hitInfos, startLoc, endLoc, ecc, params);
-
+	
 	if (bHit)
 	{
 		FVector hitLoc = hitInfos[0].ImpactPoint;

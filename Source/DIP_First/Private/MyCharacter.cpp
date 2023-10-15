@@ -122,6 +122,10 @@ void AMyCharacter::Tick(float DeltaTime)
 	modifyPitch = FMath::Clamp(modifyPitch, -60, 60);
 	FRotator modifiedRot = FRotator(modifyPitch, currentCamRot.Yaw, currentCamRot.Roll);
 	springArmComp->SetWorldRotation(modifiedRot);
+
+	// 카메라의 화각을 fov의 값으로 서서히 변경한다.
+	cameraComp->FieldOfView = FMath::Lerp(cameraComp->FieldOfView, fov, DeltaTime*5);
+
 }
 
 void AMyCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
@@ -144,6 +148,8 @@ void AMyCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputCompone
 		enhancedInputComponent->BindAction(ia_dash, ETriggerEvent::Completed, this, &AMyCharacter::OnDashInputEnd);
 		enhancedInputComponent->BindAction(ia_fire, ETriggerEvent::Started, this, &AMyCharacter::OnFireInput);
 		enhancedInputComponent->BindAction(ia_throw, ETriggerEvent::Completed, this, &AMyCharacter::OnThrowInput);
+		enhancedInputComponent->BindAction(ia_zoom, ETriggerEvent::Started, this, &AMyCharacter::OnZoomInCamera);
+		enhancedInputComponent->BindAction(ia_zoom, ETriggerEvent::Completed, this, &AMyCharacter::OnZoomOutCamera);
 	}
 }
 
@@ -261,7 +267,14 @@ void AMyCharacter::OnFireInput(const struct FInputActionValue& value)
 	// 총 발사음을 플레이한다.
 	UGameplayStatics::PlaySound2D(GetWorld(), fire_sound, 0.3f);
 
+	// 카메라 셰이킹을 한다.
+	if (pc != nullptr && shake_bp != nullptr)
+	{
+		pc->ClientStartCameraShake(shake_bp);
+	}
 
+	// 카메라 페이드 인을 한다.
+	pc->PlayerCameraManager->StartCameraFade(1.0f, 0.0f, 1.0f, FLinearColor(1, 1, 1), true);
 }
 
 // 수류탄 투척 함수
@@ -283,6 +296,18 @@ void AMyCharacter::OnThrowInput()
 		FVector throwDir = (GetActorForwardVector() + GetActorUpVector()).GetSafeNormal();
 		grenade_inst->sphereCollision->AddImpulse(throwDir * throwPower);
 	}
+}
+
+void AMyCharacter::OnZoomInCamera()
+{
+	springArmComp->TargetArmLength = -50;
+	fov = 45.0f;
+}
+
+void AMyCharacter::OnZoomOutCamera()
+{
+	springArmComp->TargetArmLength = 500;
+	fov = 90.0f;
 }
 
 // 블루프린트 노드로 사용할 함수

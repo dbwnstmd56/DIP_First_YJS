@@ -23,6 +23,9 @@ public:
 
 	virtual void SetupPlayerInputComponent(class UInputComponent* PlayerInputComponent) override;
 
+	FVector moveDir;
+
+
 	UPROPERTY(EditAnywhere, Category = MySettings)
 	class UCameraComponent* cameraComp;
 
@@ -31,8 +34,6 @@ public:
 
 	UPROPERTY(EditAnywhere, Category = MySettings)
 	class USkeletalMeshComponent* gunMeshComp;
-
-
 
 	UPROPERTY(EditAnywhere, Category = MySettings)
 	class UInputMappingContext* myIMC_File;
@@ -56,6 +57,9 @@ public:
 	class UInputAction* ia_throw;
 
 	UPROPERTY(EditAnywhere, Category = MySettings)
+	class UInputAction* ia_zoom;
+
+	UPROPERTY(EditAnywhere, Category = MySettings)
 	TSubclassOf<class ABulletActor> bullet_bp;
 
 	UPROPERTY(EditAnywhere, Category = MySettings)
@@ -70,18 +74,23 @@ public:
 	UPROPERTY(EditAnywhere, Category = MySettings)
 	float throwPower = 1000;
 
+	UPROPERTY(EditAnywhere, Category = MySettings)
+	TSubclassOf<class UCameraShakeBase> shake_bp;
+
 	UFUNCTION(BlueprintCallable, DisplayName = "MyLT")
 	//UFUNCTION(BlueprintPure, DisplayName = "MyLT")
 	bool MyLineTraceMultiByChannel(TArray<struct FHitResult>& hitInfos, const FVector startLoc, const FVector endLoc, enum ECollisionChannel ecc);
 
 	UFUNCTION(BlueprintCallable)
 	int32 Add(int32 num1, int32 num2);
+	
 
 
 private:
-	FVector moveDir;
+	
 	FRotator rotateAxis;
 	class APlayerController* pc;
+	float fov = 90;
 
 	void OnMoveInput(const struct FInputActionValue& value);
 	void OnRotateInput(const struct FInputActionValue& value);
@@ -89,7 +98,8 @@ private:
 	void OnDashInputEnd(const struct FInputActionValue& value);
 	void OnFireInput(const struct FInputActionValue& value);
 	void OnThrowInput();
-
+	void OnZoomInCamera();
+	void OnZoomOutCamera();
 
 
 	// UPROPERTY 메타 지정자 예시

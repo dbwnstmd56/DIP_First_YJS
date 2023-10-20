@@ -79,6 +79,8 @@ void AMyCharacter::BeginPlay()
 		}
 	}
 
+	hp = maxHP;
+
 	// 로그를 출력하기
 	//UE_LOG(LogTemp, Log, TEXT("%s(%d): MyLog1"), *FString(__FUNCTION__), __LINE__);
 	/*PrintMsg(*FString("My Log !"));
@@ -341,5 +343,10 @@ bool AMyCharacter::MyLineTraceMultiByChannel(TArray<FHitResult>& hitInfos, const
 int32 AMyCharacter::Add(int32 num1, int32 num2)
 {
 	return num1 + num2;
+}
+
+void AMyCharacter::DamagePlayer(int32 damage)
+{
+	hp = FMath::Max(0, hp - damage);
 }
 

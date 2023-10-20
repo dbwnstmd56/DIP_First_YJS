@@ -83,6 +83,10 @@ public:
 	UPROPERTY(EditAnywhere, Category = MySettings)
 	class UAnimMontage* fireAnim2;
 
+	UPROPERTY(EditAnywhere, Category = MySettings)
+	int32 maxHP = 200;
+
+
 	UFUNCTION(BlueprintCallable, DisplayName = "MyLT")
 	//UFUNCTION(BlueprintPure, DisplayName = "MyLT")
 	bool MyLineTraceMultiByChannel(TArray<struct FHitResult>& hitInfos, const FVector startLoc, const FVector endLoc, enum ECollisionChannel ecc);
@@ -90,10 +94,12 @@ public:
 	UFUNCTION(BlueprintCallable)
 	int32 Add(int32 num1, int32 num2);
 	
+	FORCEINLINE int32 GetCurrentHP() { return hp; };
+	void DamagePlayer(int32 damage);
 
 
 private:
-	
+	int32 hp = 0;
 	FRotator rotateAxis;
 	class APlayerController* pc;
 	float fov = 90;

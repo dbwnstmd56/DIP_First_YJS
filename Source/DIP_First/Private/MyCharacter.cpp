@@ -13,6 +13,8 @@
 #include "Kismet/GameplayStatics.h"
 #include "GrenadeActor.h"
 #include "Components/SphereComponent.h"
+#include "Enemy.h"
+#include "MainUserWidget.h"
 
 
 #define PrintMsg(msg) UE_LOG(LogTemp, Warning, TEXT("%s(%d): %s"), *FString(__FUNCTION__), __LINE__, msg)
@@ -80,6 +82,19 @@ void AMyCharacter::BeginPlay()
 	}
 
 	hp = maxHP;
+
+	if (mainWidget != nullptr)
+	{
+		// 위젯 블루프린트를 생성한다.
+		mainWidget_inst = CreateWidget<UMainUserWidget>(GetWorld(), mainWidget);
+
+		if (mainWidget_inst != nullptr)
+		{
+			// 생성된 위젯 인스턴스를 뷰포트에 표시한다.
+			mainWidget_inst->AddToViewport();
+		}
+	}
+
 
 	// 로그를 출력하기
 	//UE_LOG(LogTemp, Log, TEXT("%s(%d): MyLog1"), *FString(__FUNCTION__), __LINE__);
@@ -207,17 +222,23 @@ void AMyCharacter::OnFireInput(const struct FInputActionValue& value)
 	params.AddIgnoredActor(this);
 
 #pragma region 3. 라인 트레이스로 발사하기 - 싱글
-	/*FHitResult hitInfo;
+	FHitResult hitInfo;
 	bool bHit = GetWorld()->LineTraceSingleByChannel(hitInfo, startLoc, endLoc, ECC_Visibility, params);
 
 	if (bHit)
 	{
-		UE_LOG(LogTemp, Warning, TEXT("%s"), *hitInfo.GetActor()->GetActorNameOrLabel());
+		//UE_LOG(LogTemp, Warning, TEXT("%s"), *hitInfo.GetActor()->GetActorNameOrLabel());
+		AEnemy* enemy = Cast<AEnemy>(hitInfo.GetActor());
+		if (enemy != nullptr)
+		{
+			enemy->OnDamage(rifleDamage);
+			UE_LOG(LogTemp, Warning, TEXT("Enemy hp: %d"), enemy->GetCurrentHP());
+		}
 	}
 	else
 	{
 		UE_LOG(LogTemp, Warning, TEXT("No Hit!!"));
-	}*/
+	}
 #pragma endregion	
 
 #pragma region 4. 라인 트레이스 발사하기 - 멀티
@@ -255,14 +276,14 @@ void AMyCharacter::OnFireInput(const struct FInputActionValue& value)
 #pragma endregion
 
 #pragma region 6. 콜리전 프로필을 이용한 라인 트레이스
-	FHitResult hitInfo;
-	if (GetWorld()->LineTraceSingleByProfile(hitInfo, startLoc, endLoc, FName("TestActor"), params))
-	{
-		UE_LOG(LogTemp, Warning, TEXT("Hit Object Name: %s"), *hitInfo.GetActor()->GetActorNameOrLabel());
+	//FHitResult hitInfo;
+	//if (GetWorld()->LineTraceSingleByProfile(hitInfo, startLoc, endLoc, FName("TestActor"), params))
+	//{
+	//	UE_LOG(LogTemp, Warning, TEXT("Hit Object Name: %s"), *hitInfo.GetActor()->GetActorNameOrLabel());
 
-		// 충돌 지점에 특정한 이펙트를 생성한다.
-		UGameplayStatics::SpawnEmitterAtLocation(GetWorld(), hit_fx, hitInfo.ImpactPoint, FRotator::ZeroRotator, true);
-	}
+	//	// 충돌 지점에 특정한 이펙트를 생성한다.
+	//	UGameplayStatics::SpawnEmitterAtLocation(GetWorld(), hit_fx, hitInfo.ImpactPoint, FRotator::ZeroRotator, true);
+	//}
 
 #pragma endregion
 	

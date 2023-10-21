@@ -40,13 +40,35 @@ void AEnemy::BeginPlay()
 	Super::BeginPlay();
 
 	// 월드에 있는 플레이어 캐릭터를 찾는다.
-	AActor* playerActor = UGameplayStatics::GetActorOfClass(GetWorld(), AMyCharacter::StaticClass());
-	player = Cast<AMyCharacter>(playerActor);
+	//AActor* playerActor = UGameplayStatics::GetActorOfClass(GetWorld(), AMyCharacter::StaticClass());
 
-	if (player != nullptr)
+	TArray<AActor*> characters;
+	UGameplayStatics::GetAllActorsOfClass(GetWorld(), ACharacter::StaticClass(), characters);
+
+	if (characters.Num() > 0)
 	{
-		target = player;
+		for (AActor* playerActor : characters)
+		{
+			player = Cast<AMyCharacter>(playerActor);
+			if (player != nullptr)
+			{
+				target = player;
+				break;
+			}
+			else
+			{
+				ACharacter* bp_player = Cast<ACharacter>(playerActor);
+				if (bp_player != nullptr)
+				{
+					target = bp_player;
+					break;
+				}
+			}
+		}
 	}
+
+
+
 
 	// 최초의 시작 위치를 저장한다.
 	startLocation = GetActorLocation();
@@ -83,19 +105,32 @@ void AEnemy::Tick(float DeltaTime)
 		HitAction();
 		break;
 	case EEnemyState::DIE:
-		DieAction();
+		//DieAction();
 		break;
 	}
 
 
 }
 
-
+// Enemy의 데미지 처리 함수
 void AEnemy::OnDamage(int32 damage)
 {
 	currentHP = FMath::Max(0, currentHP - damage);
-	knockBackLocation = GetActorLocation() + GetActorForwardVector() * -1 * knockBackRange;
-	enemyState = EEnemyState::HIT;
+	
+	// 변경된 체력이 0 이하이면 죽음 상태로 처리한다.
+	if (currentHP <= 0)
+	{
+		enemyState = EEnemyState::DIE;
+		UE_LOG(LogTemp, Warning, TEXT("Current Enemy state: %s"), *UEnum::GetValueAsString(enemyState));
+		DieAction();
+	}
+	// 변경된 체력이 0 이상이면 넉백 처리를 한다.
+	else
+	{
+		knockBackLocation = GetActorLocation() + GetActorForwardVector() * -1 * knockBackRange;
+		enemyState = EEnemyState::HIT;
+	}
+	
 }
 
 void AEnemy::IdleAction()
@@ -208,7 +243,7 @@ void AEnemy::ReturnAction()
 
 void AEnemy::HitAction()
 {
-	FVector newLoc = FMath::Lerp(GetActorLocation(), knockBackLocation, 0.6f);
+	FVector newLoc = FMath::Lerp(GetActorLocation(), knockBackLocation, 0.3f);
 
 	if (FVector::Distance(newLoc, GetActorLocation()) < 5)
 	{
@@ -222,19 +257,34 @@ void AEnemy::HitAction()
 
 void AEnemy::DieAction()
 {
+	// 3초 뒤에 제거한다.
+	FTimerHandle dieTimer;
+	//GetWorld()->GetTimerManager().SetTimer(...)
+	GetWorldTimerManager().SetTimer(dieTimer, this, &AEnemy::DestroyProcess, 3.0f, false);
+
+	// 캡슐 콜리전의 충돌을 Off한다.
+	capsuleComp->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 
 }
 
 void AEnemy::AttackTest()
 {
 	//UE_LOG(LogTemp, Warning, TEXT("Attack %s"), *player->GetActorNameOrLabel());
-	player->DamagePlayer(attackPower);
-	UE_LOG(LogTemp, Warning, TEXT("Player Current hp : %d"), player->GetCurrentHP());
-
-	if (player->GetCurrentHP() <= 0)
+	if (player != nullptr)
 	{
-		enemyState = EEnemyState::RETURN;
-		UE_LOG(LogTemp, Warning, TEXT("Current Enemy State: %s"), *UEnum::GetValueAsString(enemyState));
+		player->DamagePlayer(attackPower);
+		UE_LOG(LogTemp, Warning, TEXT("Player Current hp : %d"), player->GetCurrentHP());
+
+		if (player->GetCurrentHP() <= 0)
+		{
+			enemyState = EEnemyState::RETURN;
+			UE_LOG(LogTemp, Warning, TEXT("Current Enemy State: %s"), *UEnum::GetValueAsString(enemyState));
+		}
 	}
+}
+
+void AEnemy::DestroyProcess()
+{
+	Destroy();
 }
 

@@ -67,7 +67,10 @@ public:
 
 
 	// 에너미의 체력 처리 관련 함수
+	UFUNCTION(BlueprintCallable)
 	void OnDamage(int32 damage);
+
+	UFUNCTION(BlueprintCallable)
 	FORCEINLINE int32 GetCurrentHP() { return currentHP; };
 
 
@@ -98,4 +101,5 @@ private:
 	void DieAction();
 
 	void AttackTest();
+	void DestroyProcess();
 };

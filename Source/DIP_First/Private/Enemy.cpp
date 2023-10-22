@@ -7,6 +7,9 @@
 #include "Components/CapsuleComponent.h"
 #include "Components/SkeletalMeshComponent.h"
 #include "Components/ArrowComponent.h"
+#include "DIPGameModeBase.h"
+#include "Components/WidgetComponent.h"
+#include "HPWidget.h"
 
 
 AEnemy::AEnemy()
@@ -33,6 +36,12 @@ AEnemy::AEnemy()
 	arrowComp = CreateDefaultSubobject<UArrowComponent>(TEXT("Arrow Component"));
 	arrowComp->SetupAttachment(RootComponent);
 	arrowComp->ArrowColor = FColor::Emerald;
+
+	widgetComp = CreateDefaultSubobject<UWidgetComponent>(TEXT("Widget Component"));
+	widgetComp->SetupAttachment(RootComponent);
+	widgetComp->SetRelativeLocation(FVector(0, 0, 180));
+	widgetComp->SetDrawSize(FVector2D(300, 200));
+	widgetComp->SetWidgetSpace(EWidgetSpace::Screen);
 }
 
 void AEnemy::BeginPlay()
@@ -67,8 +76,13 @@ void AEnemy::BeginPlay()
 		}
 	}
 
+	// 자신의 이름을 위젯에 출력하기
+	hpWidget = Cast<UHPWidget>(widgetComp->GetWidget());
 
-
+	if (hpWidget != nullptr)
+	{
+		hpWidget->SetOwnerName(GetActorNameOrLabel());
+	}
 
 	// 최초의 시작 위치를 저장한다.
 	startLocation = GetActorLocation();
@@ -109,7 +123,11 @@ void AEnemy::Tick(float DeltaTime)
 		break;
 	}
 
-
+	// 현재 체력을 위젯에 갱신한다.
+	if (hpWidget != nullptr)
+	{
+		hpWidget->SetHP(currentHP, maxHP);
+	}
 }
 
 // Enemy의 데미지 처리 함수
@@ -123,6 +141,13 @@ void AEnemy::OnDamage(int32 damage)
 		enemyState = EEnemyState::DIE;
 		UE_LOG(LogTemp, Warning, TEXT("Current Enemy state: %s"), *UEnum::GetValueAsString(enemyState));
 		DieAction();
+		
+		// 게임 모드 베이스에 점수를 추가한다.
+		ADIPGameModeBase* gm = Cast<ADIPGameModeBase>(GetWorld()->GetAuthGameMode());
+		if (gm != nullptr)
+		{
+			gm->AddScore(1);
+		}
 	}
 	// 변경된 체력이 0 이상이면 넉백 처리를 한다.
 	else

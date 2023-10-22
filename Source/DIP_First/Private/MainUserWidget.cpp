@@ -9,6 +9,6 @@ void UMainUserWidget::NativeConstruct()
 {
 	Super::NativeConstruct();
 
-	text_score->SetText(FText::FromString("Current Score: 0"));
+	text_score->SetText(FText::FromString("0"));
 
 }

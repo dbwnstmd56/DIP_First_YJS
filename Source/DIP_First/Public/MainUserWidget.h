@@ -20,8 +20,10 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category=MySettings, meta=(BindWidget))
 	class UTextBlock* text_score;
 
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category=MySettings, meta=(BindWidget))
+	class UImage* img_Crosshair;	
 
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category=MySettings)
-	int32 currentScore = 0;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category=MySettings, meta=(BindWidgetAnim), Transient)
+	class UWidgetAnimation* pointupAnim;
 
 };

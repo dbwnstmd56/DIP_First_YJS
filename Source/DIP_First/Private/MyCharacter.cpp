@@ -14,7 +14,7 @@
 #include "GrenadeActor.h"
 #include "Components/SphereComponent.h"
 #include "Enemy.h"
-#include "MainUserWidget.h"
+#include "DIPGameModeBase.h"
 
 
 #define PrintMsg(msg) UE_LOG(LogTemp, Warning, TEXT("%s(%d): %s"), *FString(__FUNCTION__), __LINE__, msg)
@@ -83,19 +83,6 @@ void AMyCharacter::BeginPlay()
 
 	hp = maxHP;
 
-	if (mainWidget != nullptr)
-	{
-		// 위젯 블루프린트를 생성한다.
-		mainWidget_inst = CreateWidget<UMainUserWidget>(GetWorld(), mainWidget);
-
-		if (mainWidget_inst != nullptr)
-		{
-			// 생성된 위젯 인스턴스를 뷰포트에 표시한다.
-			mainWidget_inst->AddToViewport();
-		}
-	}
-
-
 	// 로그를 출력하기
 	//UE_LOG(LogTemp, Log, TEXT("%s(%d): MyLog1"), *FString(__FUNCTION__), __LINE__);
 	/*PrintMsg(*FString("My Log !"));
@@ -112,6 +99,11 @@ void AMyCharacter::BeginPlay()
 void AMyCharacter::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
+
+	if (hp <= 0)
+	{
+		return;
+	}
 
 	// moveDir 변수의 값에 있는데로 캐릭터를 이동한다.
 	// p = p0+vt or AddMovementInput()
@@ -201,6 +193,11 @@ void AMyCharacter::OnDashInputEnd(const FInputActionValue& value)
 
 void AMyCharacter::OnFireInput(const struct FInputActionValue& value)
 {
+	if (hp <= 0)
+	{
+		return;
+	}
+
 #pragma region 1. 순수한 블루프린트 파일을 월드에 생성하는 방법
 	//
 	/*FActorSpawnParameters params;
@@ -216,8 +213,10 @@ void AMyCharacter::OnFireInput(const struct FInputActionValue& value)
 	ABulletActor* spawnedBullet = GetWorld()->SpawnActor<ABulletActor>(bullet_bp, gunMeshComp->GetSocketLocation(FName("Muzzle")), gunMeshComp->GetSocketRotation(FName("Muzzle")), params);*/
 #pragma endregion	
 
-	FVector startLoc = gunMeshComp->GetSocketLocation(FName("Muzzle"));
-	FVector endLoc = startLoc + gunMeshComp->GetRightVector() * 1000.0f;
+	//FVector startLoc = gunMeshComp->GetSocketLocation(FName("Muzzle"));
+	//FVector endLoc = startLoc + gunMeshComp->GetRightVector() * 1000.0f;
+	FVector startLoc = cameraComp->GetComponentLocation() + cameraComp->GetForwardVector() * springArmComp->TargetArmLength;
+	FVector endLoc = startLoc + cameraComp->GetForwardVector() * 1000.0f;
 	FCollisionQueryParams params;
 	params.AddIgnoredActor(this);
 
@@ -233,12 +232,21 @@ void AMyCharacter::OnFireInput(const struct FInputActionValue& value)
 		{
 			enemy->OnDamage(rifleDamage);
 			UE_LOG(LogTemp, Warning, TEXT("Enemy hp: %d"), enemy->GetCurrentHP());
+
+			// 만일, Enemy의 체력이 0 이하인 경우에는 점수를 1점 추가한다.
+			/*if (mainWidget_inst != nullptr && enemy->GetCurrentHP() <= 0)
+			{
+				mainWidget_inst->AddScore(1);
+			}*/
 		}
 	}
 	else
 	{
 		UE_LOG(LogTemp, Warning, TEXT("No Hit!!"));
 	}
+
+	DrawDebugLine(GetWorld(), startLoc, endLoc, FColor::Red, false, 5, 0, 2);
+
 #pragma endregion	
 
 #pragma region 4. 라인 트레이스 발사하기 - 멀티
@@ -306,6 +314,11 @@ void AMyCharacter::OnFireInput(const struct FInputActionValue& value)
 // 수류탄 투척 함수
 void AMyCharacter::OnThrowInput()
 {
+	if (hp <= 0)
+	{
+		return;
+	}
+
 	// 1. 수류탄을 생성한다.
 	FActorSpawnParameters params;
 	params.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
@@ -369,5 +382,17 @@ int32 AMyCharacter::Add(int32 num1, int32 num2)
 void AMyCharacter::DamagePlayer(int32 damage)
 {
 	hp = FMath::Max(0, hp - damage);
+
+	if (hp <= 0)
+	{
+		ADIPGameModeBase* gm = Cast<ADIPGameModeBase>(GetWorld()->GetAuthGameMode());
+		if (gm != nullptr)
+		{
+			// 게임 오버 위젯을 화면에 출력한다.
+			gm->LoadGameOverUI();
+		}
+
+		GetCapsuleComponent()->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+	}
 }
 

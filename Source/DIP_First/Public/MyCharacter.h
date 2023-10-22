@@ -26,7 +26,7 @@ public:
 	FVector moveDir;
 
 
-	UPROPERTY(EditAnywhere, Category = MySettings)
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = MySettings)
 	class UCameraComponent* cameraComp;
 
 	UPROPERTY(EditAnywhere, Category = MySettings)
@@ -89,9 +89,6 @@ public:
 	UPROPERTY(EditAnywhere, Category = MySettings)
 	int32 rifleDamage = 30;
 
-	UPROPERTY(EditAnywhere, Category = MySettings)
-	TSubclassOf<class UMainUserWidget> mainWidget;
-
 
 	UFUNCTION(BlueprintCallable, DisplayName = "MyLT")
 	//UFUNCTION(BlueprintPure, DisplayName = "MyLT")
@@ -109,8 +106,6 @@ private:
 	FRotator rotateAxis;
 	class APlayerController* pc;
 	float fov = 90;
-	class UMainUserWidget* mainWidget_inst;
-
 
 	void OnMoveInput(const struct FInputActionValue& value);
 	void OnRotateInput(const struct FInputActionValue& value);

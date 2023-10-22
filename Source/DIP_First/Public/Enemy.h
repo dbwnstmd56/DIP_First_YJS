@@ -45,6 +45,9 @@ public:
 	class UArrowComponent* arrowComp;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category=MySettings)
+	class UWidgetComponent* widgetComp;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category=MySettings)
 	EEnemyState enemyState = EEnemyState::IDLE;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category=MySettings)
@@ -73,24 +76,25 @@ public:
 	UFUNCTION(BlueprintCallable)
 	FORCEINLINE int32 GetCurrentHP() { return currentHP; };
 
-
-private:
-	UPROPERTY()
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category=MySettings)
 	class AMyCharacter* player;
 
+private:
 	UPROPERTY()
 	class AActor* target;
 
 	UPROPERTY(EditAnywhere, Category=MySettings, meta=(AllowPrivateAccess = true))
 	float attackPower = 10;
 
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category=MySettings, meta=(AllowPrivateAccess = true))
+	int32 currentHP = 0;
+	
 	FTimerHandle attackTimer;
 	float currentDelay = 0;
-	
 	FVector startLocation;
 	FRotator startRotation;
-	int32 currentHP = 0;
 	FVector knockBackLocation;
+	class UHPWidget* hpWidget;
 	
 	void IdleAction();
 	void MoveAction();

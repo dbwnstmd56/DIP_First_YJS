@@ -3,13 +3,13 @@
 #pragma once
 
 #include "CoreMinimal.h"
-#include "GameFramework/Actor.h"
+#include "GameFramework/Pawn.h"
 #include "Enemy.generated.h"
 
 
 // Enemy의 상태 종류
 UENUM(BlueprintType)
-enum class EEnemyState
+enum class EEnemyState : uint8
 {
 	IDLE	UMETA(DisplayName="Idle State"),
 	MOVE	UMETA(DisplayName = "Move State"),
@@ -22,7 +22,7 @@ enum class EEnemyState
 
 
 UCLASS()
-class DIP_FIRST_API AEnemy : public AActor
+class DIP_FIRST_API AEnemy : public APawn
 {
 	GENERATED_BODY()
 
@@ -68,6 +68,9 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category=MySettings)
 	float knockBackRange = 60;
 
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category=MySettings)
+	class UAnimMontage* hitMontage;
+
 
 	// 에너미의 체력 처리 관련 함수
 	UFUNCTION(BlueprintCallable)
@@ -78,6 +81,12 @@ public:
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category=MySettings)
 	class AMyCharacter* player;
+
+	UFUNCTION(BlueprintCallable)
+	void AttackTest();
+
+	UFUNCTION(BlueprintCallable)
+	void AttackEnd();
 
 private:
 	UPROPERTY()
@@ -95,6 +104,7 @@ private:
 	FRotator startRotation;
 	FVector knockBackLocation;
 	class UHPWidget* hpWidget;
+	//bool bCanAttack = true;
 	
 	void IdleAction();
 	void MoveAction();
@@ -103,7 +113,5 @@ private:
 	void ReturnAction();
 	void HitAction();
 	void DieAction();
-
-	void AttackTest();
 	void DestroyProcess();
 };

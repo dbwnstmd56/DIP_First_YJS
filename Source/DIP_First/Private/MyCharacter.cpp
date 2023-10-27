@@ -15,6 +15,8 @@
 #include "Components/SphereComponent.h"
 #include "Enemy.h"
 #include "DIPGameModeBase.h"
+#include "Components/WidgetComponent.h"
+#include "HPWidget.h"
 
 
 #define PrintMsg(msg) UE_LOG(LogTemp, Warning, TEXT("%s(%d): %s"), *FString(__FUNCTION__), __LINE__, msg)
@@ -39,7 +41,7 @@ AMyCharacter::AMyCharacter()
 
 	// 캡슐 콜리전의 프리셋을 적용하기
 	GetCapsuleComponent()->SetCollisionProfileName(FName("PlayerPreset"));
-	
+
 
 	// 스켈레탈 메시 파일을 생성해서 SkeletalMesh Component에 넣기
 	static ConstructorHelpers::FObjectFinder<USkeletalMesh> playerMesh(TEXT("/Game/Characters/Mannequins/Meshes/SKM_Manny"));
@@ -54,12 +56,24 @@ AMyCharacter::AMyCharacter()
 
 	// 기본 이동 속도를 600cm/s 로 설정한다.
 	GetCharacterMovement()->MaxWalkSpeed = 600;
-	
+
 	// 최대 점프 횟수를 3회로 설정한다.
 	JumpMaxCount = 3;
 
 	// 웅크리기를 가능하게 설정한다.
 	GetCharacterMovement()->GetNavAgentPropertiesRef().bCanCrouch = true;
+
+	// 헤드업 디스플레이 위젯 컴포넌트를 생성 및 루트에 부착한다.
+	healthWidget = CreateDefaultSubobject<UWidgetComponent>(TEXT("Health UI"));
+	healthWidget->SetupAttachment(RootComponent);
+
+	static ConstructorHelpers::FClassFinder<UHPWidget> ui_obj(TEXT("/Game/UI/CPP/WBP_HealthWidget"));
+	if (ui_obj.Succeeded() && healthWidget != nullptr)
+	{
+		healthWidget->SetWidgetClass(ui_obj.Class);
+		healthWidget->SetDrawSize(FVector2D(300.0f, 200.0f));
+		healthWidget->SetRelativeLocation(FVector(0, 0, 150));
+	}
 }
 
 void AMyCharacter::BeginPlay()
@@ -81,14 +95,23 @@ void AMyCharacter::BeginPlay()
 		}
 	}
 
+	// 생성된 health UI 인스턴스를 전역 변수에 저장해놓는다.
+	health_inst = Cast<UHPWidget>(healthWidget->GetUserWidgetObject());
+	UE_LOG(LogTemp, Warning, TEXT("Result: %s"), health_inst == nullptr ? *FString("Null") : *FString("Success"));
+
 	hp = maxHP;
+	if (health_inst != nullptr)
+	{
+		health_inst->SetOwnerName(GetActorNameOrLabel());
+	}
+
 
 	// 로그를 출력하기
 	//UE_LOG(LogTemp, Log, TEXT("%s(%d): MyLog1"), *FString(__FUNCTION__), __LINE__);
 	/*PrintMsg(*FString("My Log !"));
 	UE_LOG(LogTemp, Warning, TEXT("MyLog2"));
 	UE_LOG(LogTemp, Error, TEXT("MyLog3"));*/
-	
+
 	// Pawn에 대한 Collision Response를 Block -> Ignore로 변경
 	/*GetCapsuleComponent()->SetCollisionResponseToChannel(ECC_Pawn, ECR_Ignore);
 	GetCapsuleComponent()->SetCollisionResponseToChannel(ECC_GameTraceChannel1, ECR_Overlap);
@@ -99,6 +122,12 @@ void AMyCharacter::BeginPlay()
 void AMyCharacter::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
+
+	// 현재 체력을 위젯에 반영한다.
+	if (health_inst != nullptr)
+	{
+		health_inst->SetHP(hp, maxHP);
+	}
 
 	if (hp <= 0)
 	{
@@ -126,14 +155,16 @@ void AMyCharacter::Tick(float DeltaTime)
 	// 카메라 상하 회전 - 스프링 암 회전 기반
 	FRotator currentCamRot = springArmComp->GetComponentRotation();
 	float modifyPitch = currentCamRot.Pitch + rotateAxis.Pitch;
-	
+
 	// 스프링 암의 회전 범위는 -60도 ~ 60도 사이로 제한한다.
 	modifyPitch = FMath::Clamp(modifyPitch, -60, 60);
 	FRotator modifiedRot = FRotator(modifyPitch, currentCamRot.Yaw, currentCamRot.Roll);
 	springArmComp->SetWorldRotation(modifiedRot);
 
 	// 카메라의 화각을 fov의 값으로 서서히 변경한다.
-	cameraComp->FieldOfView = FMath::Lerp(cameraComp->FieldOfView, fov, DeltaTime*5);
+	cameraComp->FieldOfView = FMath::Lerp(cameraComp->FieldOfView, fov, DeltaTime * 5);
+
+	
 
 }
 
@@ -216,7 +247,7 @@ void AMyCharacter::OnFireInput(const struct FInputActionValue& value)
 	//FVector startLoc = gunMeshComp->GetSocketLocation(FName("Muzzle"));
 	//FVector endLoc = startLoc + gunMeshComp->GetRightVector() * 1000.0f;
 	FVector startLoc = cameraComp->GetComponentLocation() + cameraComp->GetForwardVector() * springArmComp->TargetArmLength;
-	FVector endLoc = startLoc + cameraComp->GetForwardVector() * 1000.0f;
+	FVector endLoc = startLoc + cameraComp->GetForwardVector() * rifleRange;
 	FCollisionQueryParams params;
 	params.AddIgnoredActor(this);
 
@@ -271,7 +302,7 @@ void AMyCharacter::OnFireInput(const struct FInputActionValue& value)
 	//	DrawDebugLine(GetWorld(), startLoc, endLoc, FColor::Red, false, 2.0f, 0, 1.0f);
 	//}
 #pragma endregion	
-	
+
 #pragma region 5. 라인 트레이스 오브젝트 타입으로 체크하기
 	/*FHitResult hitInfo;
 	FCollisionObjectQueryParams objectQueryParams;
@@ -294,7 +325,7 @@ void AMyCharacter::OnFireInput(const struct FInputActionValue& value)
 	//}
 
 #pragma endregion
-	
+
 	// 총 발사음을 플레이한다.
 	UGameplayStatics::PlaySound2D(GetWorld(), fire_sound, 0.3f);
 
@@ -323,7 +354,7 @@ void AMyCharacter::OnThrowInput()
 	FActorSpawnParameters params;
 	params.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
 	AGrenadeActor* grenade_inst = GetWorld()->SpawnActor<AGrenadeActor>(grenade_bp, GetActorLocation() + GetActorForwardVector() * 100, FRotator::ZeroRotator, params);
-	
+
 	if (grenade_inst != nullptr)
 	{
 		// 2. 수류탄 액터의 물리 상태를 던질 수 있는 상태로 변경한다.
@@ -357,7 +388,7 @@ bool AMyCharacter::MyLineTraceMultiByChannel(TArray<FHitResult>& hitInfos, const
 	FCollisionQueryParams params;
 	params.AddIgnoredActor(this);
 	bool bHit = GetWorld()->LineTraceMultiByChannel(hitInfos, startLoc, endLoc, ecc, params);
-	
+
 	if (bHit)
 	{
 		FVector hitLoc = hitInfos[0].ImpactPoint;

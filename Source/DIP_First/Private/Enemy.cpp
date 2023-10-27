@@ -152,6 +152,18 @@ void AEnemy::OnDamage(int32 damage)
 	// 변경된 체력이 0 이상이면 넉백 처리를 한다.
 	else
 	{
+		// 피격 애니메이션 몽타주를 플레이한다.
+		UAnimInstance* enemyAnimInstance = bodyMeshComp->GetAnimInstance();
+		if (enemyAnimInstance != nullptr)
+		{
+			UE_LOG(LogTemp, Warning, TEXT("Montage Play!!!"));
+			enemyAnimInstance->Montage_Play(hitMontage);
+		}
+		else
+		{
+			UE_LOG(LogTemp, Warning, TEXT("No Anim Instance..."));
+		}
+
 		knockBackLocation = GetActorLocation() + GetActorForwardVector() * -1 * knockBackRange;
 		enemyState = EEnemyState::HIT;
 	}
@@ -231,11 +243,11 @@ void AEnemy::AttackAction()
 
 	// 대상을 공격하는 함수를 실행한다.
 	// 방법 2) 상태 전환을 이용해서 반복하는 방식
-	AttackTest();
-	if (enemyState == EEnemyState::ATTACK)
+	//AttackTest();
+	/*if (enemyState == EEnemyState::ATTACK)
 	{
 		enemyState = EEnemyState::ATTACKDELAY;
-	}
+	}*/
 
 }
 
@@ -268,9 +280,9 @@ void AEnemy::ReturnAction()
 
 void AEnemy::HitAction()
 {
-	FVector newLoc = FMath::Lerp(GetActorLocation(), knockBackLocation, 0.3f);
+	FVector newLoc = FMath::Lerp(GetActorLocation(), knockBackLocation, 0.05f);
 
-	if (FVector::Distance(newLoc, GetActorLocation()) < 5)
+	if (FVector::Distance(newLoc, knockBackLocation) < 5)
 	{
 		enemyState = EEnemyState::MOVE;
 	}
@@ -306,6 +318,11 @@ void AEnemy::AttackTest()
 			UE_LOG(LogTemp, Warning, TEXT("Current Enemy State: %s"), *UEnum::GetValueAsString(enemyState));
 		}
 	}
+}
+
+void AEnemy::AttackEnd()
+{
+	enemyState = EEnemyState::ATTACKDELAY;
 }
 
 void AEnemy::DestroyProcess()

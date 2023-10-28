@@ -10,6 +10,8 @@
 #include "DIPGameModeBase.h"
 #include "Components/WidgetComponent.h"
 #include "HPWidget.h"
+#include "AIController.h"
+#include "Navigation/PathFollowingComponent.h"
 
 
 AEnemy::AEnemy()
@@ -90,6 +92,12 @@ void AEnemy::BeginPlay()
 
 	// 체력 초기화
 	currentHP = maxHP;
+
+	// 현재 설정된 Anim Instance 가져오기
+	enemyAnimInstance = bodyMeshComp->GetAnimInstance();
+
+	// 현재 설정된 AI Controller 가져오기
+	aiCon = GetController<AAIController>();
 }
 
 void AEnemy::Tick(float DeltaTime)
@@ -153,7 +161,6 @@ void AEnemy::OnDamage(int32 damage)
 	else
 	{
 		// 피격 애니메이션 몽타주를 플레이한다.
-		UAnimInstance* enemyAnimInstance = bodyMeshComp->GetAnimInstance();
 		if (enemyAnimInstance != nullptr)
 		{
 			UE_LOG(LogTemp, Warning, TEXT("Montage Play!!!"));
@@ -163,7 +170,8 @@ void AEnemy::OnDamage(int32 damage)
 		{
 			UE_LOG(LogTemp, Warning, TEXT("No Anim Instance..."));
 		}
-
+		FVector dir = (player->GetActorLocation() - GetActorLocation()).GetSafeNormal();
+		SetActorRotation(dir.ToOrientationRotator());
 		knockBackLocation = GetActorLocation() + GetActorForwardVector() * -1 * knockBackRange;
 		enemyState = EEnemyState::HIT;
 	}
@@ -214,11 +222,17 @@ void AEnemy::MoveAction()
 	SetActorRotation(rot);
 
 	// 플레이어의 방향으로 이동한다.
-	SetActorLocation(GetActorLocation() + dir * 600.0f * GetWorld()->DeltaTimeSeconds);
+	//SetActorLocation(GetActorLocation() + dir * 600.0f * GetWorld()->DeltaTimeSeconds, true);
+	if (aiCon != nullptr)
+	{
+		EPathFollowingRequestResult::Type result = aiCon->MoveToActor(player, attackDistance);
+		UE_LOG(LogTemp, Warning, TEXT("Move Result: %s"), *UEnum::GetValueAsString<EPathFollowingRequestResult::Type>(result));
+	}
+	
 
 	// attack Distance까지 접근했으면 상태를 Attack 상태로 변경한다.
 	float distance = FVector::Distance(target->GetActorLocation(), GetActorLocation());
-	if (distance < attackDistance)
+	if (distance <= attackDistance)
 	{
 		enemyState = EEnemyState::ATTACKDELAY;
 		currentDelay = 1.0f;
@@ -294,14 +308,22 @@ void AEnemy::HitAction()
 
 void AEnemy::DieAction()
 {
+	// 애니메이션 몽타주를 플레이한다.
+	//if (enemyAnimInstance != nullptr)
+	//{
+	//	enemyAnimInstance->Montage_Play(dieMontage);
+	//	//enemyAnimInstance->Montage_Stop(0.1f, dieMontage); -> 몽타주를 강제로 종료하기
+	//}
+
 	// 3초 뒤에 제거한다.
 	FTimerHandle dieTimer;
 	//GetWorld()->GetTimerManager().SetTimer(...)
-	GetWorldTimerManager().SetTimer(dieTimer, this, &AEnemy::DestroyProcess, 3.0f, false);
+	GetWorldTimerManager().SetTimer(dieTimer, this, &AEnemy::DestroyProcess, 5.0f, false);
 
 	// 캡슐 콜리전의 충돌을 Off한다.
 	capsuleComp->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 
+	
 }
 
 void AEnemy::AttackTest()

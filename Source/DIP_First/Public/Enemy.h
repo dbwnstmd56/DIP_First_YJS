@@ -71,6 +71,12 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category=MySettings)
 	class UAnimMontage* hitMontage;
 
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category=MySettings)
+	class UAnimMontage* dieMontage;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category=MySettings)
+	class AActor* boxActor;
+
 
 	// 에너미의 체력 처리 관련 함수
 	UFUNCTION(BlueprintCallable)
@@ -89,7 +95,7 @@ public:
 	void AttackEnd();
 
 private:
-	UPROPERTY()
+	UPROPERTY(VisibleAnywhere, meta=(AllowAccessPrivate))
 	class AActor* target;
 
 	UPROPERTY(EditAnywhere, Category=MySettings, meta=(AllowPrivateAccess = true))
@@ -105,7 +111,9 @@ private:
 	FVector knockBackLocation;
 	class UHPWidget* hpWidget;
 	//bool bCanAttack = true;
-	
+	class UAnimInstance* enemyAnimInstance;
+	class AAIController* aiCon;
+
 	void IdleAction();
 	void MoveAction();
 	void AttackAction();

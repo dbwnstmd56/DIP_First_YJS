@@ -12,6 +12,11 @@
 #include "HPWidget.h"
 #include "AIController.h"
 #include "Navigation/PathFollowingComponent.h"
+#include "GameFramework/FloatingPawnMovement.h"
+#include "NavigationSystem.h"
+#include "NavigationPath.h"
+#include "DrawDebugHelpers.h"
+#include "DIPFunctionLibrary.h"
 
 
 AEnemy::AEnemy()
@@ -22,6 +27,7 @@ AEnemy::AEnemy()
 	SetRootComponent(capsuleComp);
 	capsuleComp->SetCapsuleHalfHeight(110.0f);
 	capsuleComp->SetCapsuleRadius(35.0f);
+	capsuleComp->SetCollisionProfileName(FName("EnemyPreset"));
 
 	bodyMeshComp = CreateDefaultSubobject<USkeletalMeshComponent>(TEXT("Body Mesh Component"));
 	bodyMeshComp->SetupAttachment(RootComponent);
@@ -44,6 +50,8 @@ AEnemy::AEnemy()
 	widgetComp->SetRelativeLocation(FVector(0, 0, 180));
 	widgetComp->SetDrawSize(FVector2D(300, 200));
 	widgetComp->SetWidgetSpace(EWidgetSpace::Screen);
+
+	pawnMovement = CreateDefaultSubobject<UFloatingPawnMovement>(TEXT("Floating Pawn Movement"));
 }
 
 void AEnemy::BeginPlay()
@@ -203,6 +211,7 @@ void AEnemy::MoveAction()
 	// 추적이 가능한 거리를 벗어났다면 복귀 상태로 전환한다.
 	if (FVector::Distance(startLocation, GetActorLocation()) > returnDistance && enemyState != EEnemyState::RETURN)
 	{
+		aiCon->StopMovement();
 		enemyState = EEnemyState::RETURN;
 		target = startObject;
 		UE_LOG(LogTemp, Warning, TEXT("Current Enemy state: %s"), *UEnum::GetValueAsString(enemyState));
@@ -213,20 +222,35 @@ void AEnemy::MoveAction()
 	//GetWorldTimerManager().ClearAllTimersForObject(this);
 	//GetWorldTimerManager().ClearTimer(attackTimer);
 
-	FVector dir = target->GetActorLocation() - GetActorLocation();
-	dir.Z = 0;
-	dir.Normalize();
-
 	// 이동하려는 방향으로 회전한다.
-	FRotator rot = dir.ToOrientationRotator();
+	FRotator rot = UDIPFunctionLibrary::CalculateRotationFromDirection(this, target);
 	SetActorRotation(rot);
 
 	// 플레이어의 방향으로 이동한다.
 	//SetActorLocation(GetActorLocation() + dir * 600.0f * GetWorld()->DeltaTimeSeconds, true);
 	if (aiCon != nullptr)
 	{
-		EPathFollowingRequestResult::Type result = aiCon->MoveToActor(player, attackDistance);
+		UWorld* currentWorld = GetWorld();
+		EPathFollowingRequestResult::Type result = aiCon->MoveToActor(target, attackDistance - 50, false);
 		UE_LOG(LogTemp, Warning, TEXT("Move Result: %s"), *UEnum::GetValueAsString<EPathFollowingRequestResult::Type>(result));
+
+		// 이동할 루트를 DebugLine을 이용해서 시각화한다.
+		UNavigationSystemV1* navSys = UNavigationSystemV1::GetCurrent(currentWorld);
+		if (navSys != nullptr)
+		{
+			UNavigationPath* navPath = navSys->FindPathToLocationSynchronously(currentWorld, GetActorLocation(), target->GetActorLocation());
+
+			if (navPath != nullptr)
+			{
+				TArray<FVector> points = navPath->PathPoints;
+
+				for (int32 i = 0; i < points.Num() - 1; i++)
+				{
+					DrawDebugLine(currentWorld, points[i], points[i+1], FColor::Red, false, 0, 0, 2.0f);
+					DrawDebugSphere(currentWorld, points[i], 5, 12, FColor::Red, false, 0, 0, 2.0f);
+				}
+			}
+		}
 	}
 	
 
@@ -234,6 +258,7 @@ void AEnemy::MoveAction()
 	float distance = FVector::Distance(target->GetActorLocation(), GetActorLocation());
 	if (distance <= attackDistance)
 	{
+		aiCon->StopMovement();
 		enemyState = EEnemyState::ATTACKDELAY;
 		currentDelay = 1.0f;
 		UE_LOG(LogTemp, Warning, TEXT("Current Enemy State: %s"), *UEnum::GetValueAsString(enemyState));
@@ -267,6 +292,10 @@ void AEnemy::AttackAction()
 
 void AEnemy::AttackDelayAction()
 {
+	// 공격하려는 방향으로 회전한다.
+	FRotator rot = UDIPFunctionLibrary::CalculateRotationFromDirection(this, target);
+	SetActorRotation(rot);
+
 	currentDelay += GetWorld()->GetDeltaSeconds();
 
 	if (currentDelay >= 2.0f)
@@ -282,12 +311,31 @@ void AEnemy::ReturnAction()
 	FVector dir = startLocation - GetActorLocation();
 	dir.Z = 0;
 	SetActorRotation(dir.ToOrientationRotator());
-	SetActorLocation(GetActorLocation() + dir.GetSafeNormal() * moveSpeed * GetWorld()->GetDeltaSeconds());
+	//SetActorLocation(GetActorLocation() + dir.GetSafeNormal() * moveSpeed * GetWorld()->GetDeltaSeconds());
+	if (aiCon != nullptr)
+	{
+		FAIMoveRequest req = FAIMoveRequest();
+		req.SetGoalLocation(startLocation);
+		req.SetAcceptanceRadius(1.0f);
+		req.SetUsePathfinding(true);
+		req.SetProjectGoalLocation(false);
+		req.SetReachTestIncludesGoalRadius(true);
+		req.SetNavigationFilter(aiCon->GetDefaultNavigationFilterClass());
+		req.SetCanStrafe(true);
+		req.SetAllowPartialPath(true);
+		aiCon->MoveTo(req);
+		
+		//aiCon->MoveToLocation(startLocation);
+	}
+
 
 	if (dir.Length() < 10)
 	{
 		SetActorLocation(startLocation);
 		SetActorRotation(startRotation);
+
+		// 네비게이션 메시 이동을 멈춘다.
+		aiCon->StopMovement();
 		enemyState = EEnemyState::IDLE;
 	}
 }

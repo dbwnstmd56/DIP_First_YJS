@@ -16,7 +16,7 @@ AGrenadeActor::AGrenadeActor()
 	SetRootComponent(sphereCollision);
 	sphereCollision->SetSphereRadius(50.0f);
 	sphereCollision->SetWorldScale3D(FVector(0.15f));
-	sphereCollision->SetMassOverrideInKg(NAME_None, 0.5f, true);				// 무게 변경
+	//sphereCollision->SetMassOverrideInKg(NAME_None, 0.5f, true);				// 무게 변경
 	sphereCollision->SetCollisionEnabled(ECollisionEnabled::NoCollision);		// 충돌 처리 off
 	sphereCollision->SetSimulatePhysics(false);									// 물리 효과 켜기
 	sphereCollision->SetEnableGravity(false);									// 중력 적용 off

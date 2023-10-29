@@ -25,7 +25,6 @@ public:
 
 	FVector moveDir;
 
-
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = MySettings)
 	class UCameraComponent* cameraComp;
 
@@ -37,6 +36,9 @@ public:
 
 	UPROPERTY(EditAnywhere, Category = MySettings)
 	class UWidgetComponent* healthWidget;
+
+	UPROPERTY(EditAnywhere, Category = MySettings)
+	class UPlayerFireComponent* playerFireComp;
 
 	UPROPERTY(EditAnywhere, Category = MySettings)
 	class UInputMappingContext* myIMC_File;
@@ -63,38 +65,7 @@ public:
 	class UInputAction* ia_zoom;
 
 	UPROPERTY(EditAnywhere, Category = MySettings)
-	TSubclassOf<class ABulletActor> bullet_bp;
-
-	UPROPERTY(EditAnywhere, Category = MySettings)
-	TSubclassOf<class AGrenadeActor> grenade_bp;
-
-	UPROPERTY(EditAnywhere, Category = MySettings)
-	class UParticleSystem* hit_fx;
-
-	UPROPERTY(EditAnywhere, Category = MySettings)
-	class USoundBase* fire_sound;
-
-	UPROPERTY(EditAnywhere, Category = MySettings)
-	float throwPower = 1000;
-
-	UPROPERTY(EditAnywhere, Category = MySettings)
-	TSubclassOf<class UCameraShakeBase> shake_bp;
-
-	UPROPERTY(EditAnywhere, Category = MySettings)
-	class UAnimMontage* fireAnim;
-
-	UPROPERTY(EditAnywhere, Category = MySettings)
-	class UAnimMontage* fireAnim2;
-
-	UPROPERTY(EditAnywhere, Category = MySettings)
 	int32 maxHP = 200;
-	
-	UPROPERTY(EditAnywhere, Category = MySettings)
-	int32 rifleDamage = 30;
-
-	UPROPERTY(EditAnywhere, Category = MySettings)
-	float rifleRange = 2000.0f;
-
 
 	UFUNCTION(BlueprintCallable, DisplayName = "MyLT")
 	//UFUNCTION(BlueprintPure, DisplayName = "MyLT")
@@ -118,8 +89,6 @@ private:
 	void OnRotateInput(const struct FInputActionValue& value);
 	void OnDashInputStart(const struct FInputActionValue& value);
 	void OnDashInputEnd(const struct FInputActionValue& value);
-	void OnFireInput(const struct FInputActionValue& value);
-	void OnThrowInput();
 	void OnZoomInCamera();
 	void OnZoomOutCamera();
 

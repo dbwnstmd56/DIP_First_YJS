@@ -48,6 +48,9 @@ public:
 	class UWidgetComponent* widgetComp;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category=MySettings)
+	class UFloatingPawnMovement* pawnMovement;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category=MySettings)
 	EEnemyState enemyState = EEnemyState::IDLE;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category=MySettings)
